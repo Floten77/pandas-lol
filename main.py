@@ -10,7 +10,7 @@ def get_list_champions(version):
     file.close()
 
 def call_riot_games_api():
-    code_api = "RGAPI-087a439c-5e70-4ce2-859f-a6914b435be8"
+    code_api = "RGAPI-087a439c-5e70-4ce2-859f-a6914b435be" # TOKEN HAS EXPIRED :)
     url = "https://euw1.api.riotgames.com/lol/platform/v3/champion-rotations"
     headers_content  = {'X-Riot-Token': f'{code_api}',"Accept": "application/json"}
     response = requests.request("get",url,headers=headers_content)
