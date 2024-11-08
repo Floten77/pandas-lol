@@ -52,19 +52,55 @@ def get_list_items(version):
     file.write(response.text)
     file.close()
 
-if __name__ == "__main__":
-    print("Bonjour")
-    version = '14.21.1'
+def get_count_items(items_name,df):
+    total = 0
+    df_parcours = df.loc[df["name"] == f"{items_name}",["name","from","gold"]]
+    print(df_parcours)
+    if df_parcours["from"].notna().any():
+        total+=get_count_items_intermediary(items_name,df)
+    else:
+        return 0
+    return total -1
+
+def get_count_items_intermediary(items_name,df):
+    total = 0
+    df_parcours = df.loc[df["name"] == f"{items_name}",["name","from","gold"]]
+    print(df_parcours)
+    if df_parcours["from"].notna().any():
+        for list_items in df_parcours["from"]:
+            for items in list_items:
+                total+=get_count_items_intermediary(df.loc[f'{items}',"name"],df)
+            total += 1
+    else:
+        return 1
+    
+    return total
+
+def treating_data_items(version):
     with open(f'list_items/items_{version}.json','r') as f:
-        data = json.load(f)
+            data = json.load(f)
     df = pd.DataFrame(data["data"])
     df = df.transpose()
     df.index = df.index.str.strip()
     df = (df.sort_values(by='plaintext', ascending=False)
         .drop_duplicates(subset=['name'])
         )
-    print(df.loc[df["name"] == "Bloodthirster",["name","from","gold"]])
-    print(df.loc[df["name"] == "B. F. Sword"])
+    count_items_bloodthirster = get_count_items("Trinity Force",df)
+    count_items_boots = get_count_items("Boots",df)
+    
+    df.loc[:,"numberitemsinrecipe"] = 0 
+    for row in df.itertuples(index=True):
+        df.loc[row.Index,"numberitemsinrecipe"] = get_count_items(row.name,df)
+
+    print(df.loc[df["name"]  == "Bloodthirster","numberitemsinrecipe"])
+    print(df.loc[:,"numberitemsinrecipe"])
+
+    df.to_csv(f'data_changes/items_{version}.csv',index = True)
+
+if __name__ == "__main__":
+    print("Bonjour")
+    version = '14.21.1'
+    treating_data_items(version)
     # Getting champions which are given for free during the current period 
     # get_rotation_champions(df)
 
