@@ -82,17 +82,22 @@ def get_details_gold_info_price_items(df):
     df = df.drop(columns=['gold']).join(df_gold_expanded)
     return df
 
-def get_count_items_into_intermediary(items_name,df):
+def get_count_items_into_intermediary(items_name,df,list_itemsname):
     total = 0
     df_parcours = df.loc[df["name"] == f"{items_name}",["name","into"]]
-    print(df_parcours)
+    #print(df_parcours["name"])
     if df_parcours["into"].notna().any():
         for list_items in df_parcours["into"]:
             for items in list_items:
                 if(not(int(items) in df.index)):
-                    total += 1
-                    continue
-                total+=get_count_items_into_intermediary(df.loc[int(items),"name"],df)
+                        total += 1
+                        continue
+                if(not(df.loc[int(items),["name"]][0] in list_itemsname)):
+                    list_itemsname.append(df.loc[int(items),["name"]][0])
+                    total+=get_count_items_into_intermediary(df.loc[int(items),"name"],df,list_itemsname)
+            
+            if(not(items_name in list_itemsname)):
+                list_itemsname.append(items_name)
             total += 1
     else:
         return 1
@@ -100,13 +105,16 @@ def get_count_items_into_intermediary(items_name,df):
     return total
 
 def get_count_into_items(items_name,df):
+    list_itemsname = []
     total = 0
     df_parcours = df.loc[df["name"] == f"{items_name}",["name","into"]]
     print(df_parcours)
     if df_parcours["into"].notna().any():
-        total+=get_count_items_into_intermediary(items_name,df)
+        total+=get_count_items_into_intermediary(items_name,df,list_itemsname)
     else:
         return 0
+    list_itemsname.pop()
+    df.at[df_parcours.index[0],"listitemsname"] = list_itemsname
     return total -1
 
 
@@ -127,25 +135,29 @@ def treating_data_items(version):
     df_duplicated = df.duplicated(subset="name",keep="first")
     df = df[~df_duplicated]
     #print("3005" > "223005")
-    #df = get_details_gold_info_price_items(df)
+    df = get_details_gold_info_price_items(df)
     #count_items_bloodthirster = get_count_items("Trinity Force",df)
     #count_items_boots = get_count_items("Boots",df)
     
     #print(count_items_bloodthirster)
     #print(count_items_boots)
-    
+    print(df.info())
+    df.loc[:,"listitemsname"] = ""
     count_into_items_magic = get_count_into_items("Null-Magic Mantle",df)
     print(count_into_items_magic)
 
-    #df.loc[:,"numberitemsinrecipe"] = 0 
-    #df.loc[:,"numbersubitems"] = 0
-    #for row in df.itertuples(index=True):
-    #    df.loc[row.Index,"numberitemsinrecipe"] = get_count_items(row.name,df)
-    #    df.loc[row.Index,"numbersubitems"] = get_count_into_items(row.name,df)
+    df.loc[:,"numberitemsinrecipe"] = 0 
+    df.loc[:,"numberitemsinto"] = 0
+    for row in df.itertuples(index=True):
+        df.loc[row.Index,"numberitemsinrecipe"] = get_count_items(row.name,df)
+        df.loc[row.Index,"numberitemsinto"] = get_count_into_items(row.name,df)
     #print(df.loc[df["name"]  == "Bloodthirster","numberitemsinrecipe"])
     #print(df.loc[:,"numberitemsinrecipe"])
 
-    #df.to_csv(f'data_changes/items_{version}.csv',index = True)
+    print(df.info())
+    print(df)
+
+    df.to_excel(f'data_changes/items_{version}_v2.xlsx',index = True)
 
 if __name__ == "__main__":
     print("Bonjour")
